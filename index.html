@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apollines Mathe-Magie ✨</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Confetti layer (fixed, covers whole viewport) -->
+  <div id="confetti-layer" class="confetti-layer"></div>
+
+  <!-- Unlock celebration overlay -->
+  <div id="unlock-overlay" class="unlock-overlay"></div>
+
+  <!-- ===================== WELCOME SCREEN ===================== -->
+  <section id="welcome-screen" class="welcome-screen">
+    <div class="welcome-card">
+      <div class="welcome-doll">
+        <svg viewBox="0 0 200 250" class="doll-svg-mini" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="90" r="40" fill="#ffe0c2"/>
+          <path d="M60,85 Q55,140 74,165 Q64,125 68,85 Z" fill="#8a6440"/>
+          <path d="M140,85 Q145,140 126,165 Q136,125 132,85 Z" fill="#8a6440"/>
+          <path d="M60,84 Q62,42 100,40 Q138,42 140,84 Q120,62 100,62 Q80,62 60,84 Z" fill="#8a6440"/>
+          <ellipse cx="84" cy="92" rx="8" ry="10" fill="#3a2a20"/>
+          <ellipse cx="116" cy="92" rx="8" ry="10" fill="#3a2a20"/>
+          <circle cx="87" cy="88" r="2.5" fill="#fff"/>
+          <circle cx="119" cy="88" r="2.5" fill="#fff"/>
+          <ellipse cx="74" cy="102" rx="6" ry="3.5" fill="#ffb6c1" opacity="0.6"/>
+          <ellipse cx="126" cy="102" rx="6" ry="3.5" fill="#ffb6c1" opacity="0.6"/>
+          <path d="M88,110 Q100,118 112,110" fill="none" stroke="#c97a53" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M70,150 Q100,132 130,150 L142,220 Q100,236 58,220 Z" fill="#ffb6d5"/>
+          <path d="M70,150 Q100,164 130,150" fill="#ffd9ec"/>
+        </svg>
+      </div>
+      <h1>Hallo Apolline! 🌸</h1>
+      <p class="welcome-subtitle">Bist du bereit für Mathe-Magie?</p>
+      <button id="play-btn" class="primary-btn play-btn">Spielen! 🎀</button>
+    </div>
+  </section>
+
+  <!-- ===================== GAME SCREEN ===================== -->
+  <section id="game-screen" class="game-screen hidden">
+    <header class="app-header">
+      <h1 class="app-title">Apollines Mathe-Magie ✨</h1>
+      <button id="wardrobe-toggle-btn" class="secondary-btn">👗 Garderobe</button>
+    </header>
+
+    <div class="main-layout">
+      <!-- LEFT: exercise area -->
+      <div class="exercise-panel">
+        <div class="progress-container">
+          <div class="progress-track">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+          <div id="progress-label" class="progress-label">⭐ 0 / 10 für das nächste Outfit!</div>
+        </div>
+
+        <div class="question-card">
+          <div id="question-text" class="question-text">?</div>
+          <div id="question-visual" class="question-visual"></div>
+
+          <div class="answer-row">
+            <input
+              id="answer-input"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              autocomplete="off"
+              class="answer-input"
+              placeholder="?"
+              aria-label="Deine Antwort">
+            <button id="check-btn" class="primary-btn">Prüfen</button>
+          </div>
+
+          <div id="feedback-panel" class="feedback-panel"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: doll + wardrobe -->
+      <div class="doll-panel">
+        <div id="doll-display" class="doll-display"></div>
+      </div>
+    </div>
+
+    <!-- Wardrobe slide-over panel -->
+    <div id="wardrobe-panel" class="wardrobe-panel">
+      <div class="wardrobe-header">
+        <h2>Garderobe 👗✨</h2>
+        <button id="wardrobe-close-btn" class="close-btn" aria-label="Schließen">✕</button>
+      </div>
+      <div id="wardrobe-content" class="wardrobe-content"></div>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
