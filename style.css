@@ -469,6 +469,24 @@ button {
   100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
 }
 
+/* ------------------------------ Sparkle burst ------------------------------ */
+
+.sparkle-piece {
+  position: fixed;
+  font-size: 1.4rem;
+  pointer-events: none;
+  z-index: 150;
+  animation-name: sparkle-rise;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes sparkle-rise {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(var(--drift), -90px) scale(1.2); opacity: 0; }
+}
+
 /* ------------------------------ Unlock overlay ------------------------------ */
 
 .unlock-overlay {

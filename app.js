@@ -147,7 +147,6 @@ function buildWardrobe() {
     buckets.kpopAcc,
     buckets.modelOutfit,
   ]);
-  order.forEach((item, i) => { item.unlockIndex = i + 1; });
   return order;
 }
 
@@ -177,7 +176,8 @@ function unlockedCountForSessionTotal(count) {
    ------------------------------------------------------------------------- */
 
 const STORAGE_KEYS = {
-  unlockedCount: 'apolline_unlocked_count',
+  unlockedCount: 'apolline_unlocked_count', // legacy key, migrated on load
+  unlockedIds: 'apolline_unlocked_ids',
   equipped: 'apolline_equipped',
 };
 
@@ -200,9 +200,30 @@ function saveJSON(key, value) {
   }
 }
 
-function loadUnlockedCount() {
-  const v = loadJSON(STORAGE_KEYS.unlockedCount, 0);
-  return (typeof v === 'number' && v >= 0) ? Math.min(v, TOTAL_ITEMS) : 0;
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Loads the set of unlocked item ids. Migrates from the old "first N items
+// in a fixed order" scheme (apolline_unlocked_count) to a random selection,
+// so nobody's already-earned progress is lost when this scheme changed.
+function loadUnlockedIds() {
+  const stored = loadJSON(STORAGE_KEYS.unlockedIds, null);
+  if (Array.isArray(stored)) {
+    return stored.filter((id) => ITEMS_BY_ID[id]).slice(0, TOTAL_ITEMS);
+  }
+  const legacyCount = loadJSON(STORAGE_KEYS.unlockedCount, 0);
+  if (typeof legacyCount === 'number' && legacyCount > 0) {
+    const migrated = shuffle(WARDROBE_ITEMS.map((it) => it.id)).slice(0, Math.min(legacyCount, TOTAL_ITEMS));
+    saveJSON(STORAGE_KEYS.unlockedIds, migrated);
+    return migrated;
+  }
+  return [];
 }
 
 function loadEquipped() {
@@ -215,20 +236,20 @@ function loadEquipped() {
    ------------------------------------------------------------------------- */
 
 const state = {
-  sessionCorrect: 0,           // resets every reload
-  totalUnlockedCount: loadUnlockedCount(), // persists
-  equipped: loadEquipped(),    // persists: { slot: itemId }
+  sessionCorrect: 0,                       // resets every reload
+  unlockedIds: new Set(loadUnlockedIds()), // persists (random per unlock)
+  equipped: loadEquipped(),                // persists: { slot: itemId }
   currentQuestion: null,
   lastQuestionKey: null,
   answered: false,
 };
 
 function unlockedItems() {
-  return WARDROBE_ITEMS.slice(0, state.totalUnlockedCount);
+  return WARDROBE_ITEMS.filter((it) => state.unlockedIds.has(it.id));
 }
 
 function isUnlocked(item) {
-  return item.unlockIndex <= state.totalUnlockedCount;
+  return state.unlockedIds.has(item.id);
 }
 
 /* -------------------------------------------------------------------------
@@ -368,7 +389,11 @@ function buildExplanationVisual(q) {
 const PRAISE_MESSAGES = [
   'Super!', 'Wunderbar!', 'Klasse gemacht, Apolline!', 'Du bist eine Mathe-Königin!',
   'Fantastisch!', 'Genau richtig!', 'Bravo, weiter so!', 'Du strahlst wie ein Star! ✨',
-  'Perfekt gerechnet!', 'Toll gemacht!',
+  'Perfekt gerechnet!', 'Toll gemacht!', 'Hurra, richtig!', 'Yay, das war Spitzenklasse!',
+  'Mathe-Zauberin am Werk! 🪄', 'Du rockst das! 🎤', 'Sensationell!', 'Ein Volltreffer!',
+  'Bühne frei für dich, Superstar! 🌟', 'Traumhaft gerechnet!', 'Du glänzt wie ein Diamant! 💎',
+  'Applaus, Applaus! 👏', 'Mega gemacht!', 'Das war zauberhaft! ✨', 'Champion-Level erreicht! 🏆',
+  'Du tanzt durch die Matheaufgaben! 💃', 'Grandios!', 'Volltreffer, Apolline!',
 ];
 
 const GENTLE_MESSAGES = [
@@ -386,45 +411,60 @@ function randomFrom(arr) {
    8. DOLL RENDERING (SVG)
    ------------------------------------------------------------------------- */
 
+// Builds a simple, anatomically-safe garment silhouette from a list of
+// {y, half} waypoints given TOP TO BOTTOM (shoulder -> hem). The path always
+// walks down the left side in increasing y, bulges the hem gently downward
+// (natural drape direction), then walks back up the right side — so the
+// shape can never come out inverted regardless of the waypoints chosen.
+function garmentPath(waypoints, hemBulge) {
+  hemBulge = hemBulge === undefined ? 8 : hemBulge;
+  const left = waypoints.map((p) => ({ x: 100 - p.half, y: p.y }));
+  const right = waypoints.map((p) => ({ x: 100 + p.half, y: p.y }));
+  const n = waypoints.length;
+  let d = `M ${left[0].x},${left[0].y}`;
+  for (let i = 1; i < n; i++) d += ` L ${left[i].x},${left[i].y}`;
+  const hemY = waypoints[n - 1].y + hemBulge;
+  d += ` Q 100,${hemY} ${right[n - 1].x},${right[n - 1].y}`;
+  for (let i = n - 2; i >= 0; i--) d += ` L ${right[i].x},${right[i].y}`;
+  d += ' Z';
+  return d;
+}
+
 const OUTFIT_TEMPLATES = {
+  // Fitted bodice, then a sudden wide flare — classic ballet tutu.
   tutu: (c) => `
-    <path d="M75,95 Q100,80 125,95 L128,120 Q100,110 72,120 Z" fill="${c.primary}"/>
-    <path d="M55,120 Q100,100 145,120 Q140,150 100,150 Q60,150 55,120 Z" fill="${c.secondary}"/>
-    <path d="M55,120 Q100,105 145,120" fill="none" stroke="${c.accent}" stroke-width="2"/>`,
+    <path d="${garmentPath([{ y: 92, half: 14 }, { y: 118, half: 13 }, { y: 120, half: 40 }], 8)}" fill="${c.secondary}"/>
+    <path d="${garmentPath([{ y: 92, half: 14 }, { y: 118, half: 13 }], 4)}" fill="${c.primary}"/>`,
   leotard: (c) => `
-    <path d="M78,92 Q100,82 122,92 L124,150 Q100,160 76,150 Z" fill="${c.primary}"/>
-    <path d="M78,92 Q100,100 122,92" fill="none" stroke="${c.accent}" stroke-width="2"/>`,
+    <path d="${garmentPath([{ y: 92, half: 14 }, { y: 155, half: 13 }], 6)}" fill="${c.primary}"/>`,
   dress: (c) => `
-    <path d="M76,92 Q100,82 124,92 L134,158 Q100,170 66,158 Z" fill="${c.primary}"/>
-    <path d="M76,92 Q100,102 124,92" fill="${c.secondary}"/>`,
+    <path d="${garmentPath([{ y: 92, half: 15 }, { y: 130, half: 16 }, { y: 175, half: 24 }], 8)}" fill="${c.primary}"/>
+    <path d="${garmentPath([{ y: 92, half: 15 }, { y: 112, half: 16 }], 3)}" fill="${c.secondary}"/>`,
   cape: (c) => `
-    <path d="M70,90 Q100,84 130,90 L140,155 Q100,140 60,155 Z" fill="${c.primary}" opacity="0.85"/>
-    <path d="M80,94 Q100,86 120,94 L122,150 Q100,158 78,150 Z" fill="${c.secondary}"/>`,
+    <path d="${garmentPath([{ y: 88, half: 20 }, { y: 160, half: 34 }], 10)}" fill="${c.primary}" opacity="0.85"/>
+    <path d="${garmentPath([{ y: 92, half: 14 }, { y: 155, half: 13 }], 6)}" fill="${c.secondary}"/>`,
   gown: (c) => `
-    <path d="M74,92 Q100,80 126,92 L142,168 Q100,182 58,168 Z" fill="${c.primary}"/>
-    <path d="M74,92 Q100,104 126,92" fill="${c.secondary}"/>
-    <path d="M100,92 L100,168" stroke="${c.accent}" stroke-width="1.5" opacity="0.6"/>`,
+    <path d="${garmentPath([{ y: 90, half: 16 }, { y: 130, half: 18 }, { y: 205, half: 30 }], 10)}" fill="${c.primary}"/>
+    <path d="${garmentPath([{ y: 90, half: 16 }, { y: 112, half: 17 }], 3)}" fill="${c.secondary}"/>`,
   jumpsuit: (c) => `
-    <path d="M78,92 Q100,84 122,92 L126,150 L108,150 L100,130 L92,150 L74,150 Z" fill="${c.primary}"/>
-    <path d="M78,92 Q100,100 122,92" fill="${c.secondary}"/>`,
+    <path d="${garmentPath([{ y: 92, half: 15 }, { y: 150, half: 16 }, { y: 210, half: 14 }], 6)}" fill="${c.primary}"/>
+    <path d="${garmentPath([{ y: 92, half: 15 }, { y: 112, half: 16 }], 3)}" fill="${c.secondary}"/>`,
   jacket: (c) => `
-    <path d="M72,90 Q100,80 128,90 L132,140 L100,148 L68,140 Z" fill="${c.primary}"/>
-    <path d="M86,94 L100,148 L114,94" fill="none" stroke="${c.accent}" stroke-width="2"/>
-    <path d="M82,150 Q100,145 118,150 L120,168 Q100,176 80,168 Z" fill="${c.secondary}"/>`,
+    <path d="${garmentPath([{ y: 145, half: 15 }, { y: 175, half: 24 }], 8)}" fill="${c.secondary}"/>
+    <path d="${garmentPath([{ y: 88, half: 17 }, { y: 145, half: 16 }], 4)}" fill="${c.primary}"/>`,
   crop: (c) => `
-    <path d="M80,92 Q100,84 120,92 L122,118 Q100,124 78,118 Z" fill="${c.primary}"/>
-    <path d="M78,128 Q100,120 122,128 L128,168 Q100,178 72,168 Z" fill="${c.secondary}"/>`,
+    <path d="${garmentPath([{ y: 128, half: 14 }, { y: 172, half: 26 }], 8)}" fill="${c.secondary}"/>
+    <path d="${garmentPath([{ y: 92, half: 14 }, { y: 118, half: 13 }], 4)}" fill="${c.primary}"/>`,
   uniform: (c) => `
-    <path d="M78,90 Q100,82 122,90 L124,130 Q100,136 76,130 Z" fill="${c.primary}"/>
-    <path d="M76,134 Q100,126 124,134 L128,168 Q100,176 72,168 Z" fill="${c.secondary}"/>
-    <path d="M92,90 L100,110 L108,90" fill="none" stroke="${c.accent}" stroke-width="2"/>`,
+    <path d="${garmentPath([{ y: 132, half: 14 }, { y: 168, half: 22 }], 6)}" fill="${c.secondary}"/>
+    <path d="${garmentPath([{ y: 90, half: 15 }, { y: 128, half: 14 }], 4)}" fill="${c.primary}"/>
+    <path d="M92,90 L100,108 L108,90" fill="none" stroke="${c.accent}" stroke-width="2"/>`,
   suit: (c) => `
-    <path d="M76,90 Q100,82 124,90 L126,150 Q100,158 74,150 Z" fill="${c.primary}"/>
-    <path d="M88,90 L100,120 L112,90" fill="none" stroke="${c.accent}" stroke-width="2"/>`,
+    <path d="${garmentPath([{ y: 90, half: 15 }, { y: 150, half: 15 }, { y: 205, half: 13 }], 5)}" fill="${c.primary}"/>
+    <path d="M88,90 L100,118 L112,90" fill="none" stroke="${c.accent}" stroke-width="2"/>`,
   coat: (c) => `
-    <path d="M70,88 Q100,78 130,88 L138,168 Q100,180 62,168 Z" fill="${c.primary}"/>
-    <path d="M100,88 L100,168" stroke="${c.accent}" stroke-width="1.5" opacity="0.5"/>
-    <path d="M86,92 L100,150 L114,92" fill="none" stroke="${c.secondary}" stroke-width="2"/>`,
+    <path d="${garmentPath([{ y: 88, half: 18 }, { y: 150, half: 19 }, { y: 210, half: 26 }], 9)}" fill="${c.primary}"/>
+    <path d="M100,90 L100,205" stroke="${c.accent}" stroke-width="1.5" opacity="0.5"/>`,
 };
 
 const ACCESSORY_RENDERERS = {
@@ -590,7 +630,7 @@ function toggleWardrobePanel() {
 function updateProgressBar() {
   const bar = document.getElementById('progress-fill');
   const label = document.getElementById('progress-label');
-  if (state.totalUnlockedCount >= TOTAL_ITEMS) {
+  if (state.unlockedIds.size >= TOTAL_ITEMS) {
     bar.style.width = '100%';
     label.textContent = 'Alle Outfits freigeschaltet! 🎉';
     return;
@@ -601,13 +641,18 @@ function updateProgressBar() {
   label.textContent = `⭐ ${progressInMilestone} / 10 für das nächste Outfit!`;
 }
 
+// Picks newly-unlocked items at random from whatever is still locked, so the
+// reveal order is a surprise every time (including on a fresh replay).
 function checkUnlocks() {
   const target = unlockedCountForSessionTotal(state.sessionCorrect);
-  if (target > state.totalUnlockedCount) {
-    const newlyUnlocked = WARDROBE_ITEMS.slice(state.totalUnlockedCount, target);
-    state.totalUnlockedCount = target;
-    saveJSON(STORAGE_KEYS.unlockedCount, state.totalUnlockedCount);
-    return newlyUnlocked;
+  const currentCount = state.unlockedIds.size;
+  if (target > currentCount) {
+    const needed = target - currentCount;
+    const locked = WARDROBE_ITEMS.filter((it) => !state.unlockedIds.has(it.id));
+    const chosen = shuffle(locked).slice(0, needed);
+    chosen.forEach((it) => state.unlockedIds.add(it.id));
+    saveJSON(STORAGE_KEYS.unlockedIds, Array.from(state.unlockedIds));
+    return chosen;
   }
   return [];
 }
@@ -668,7 +713,8 @@ function submitAnswer() {
     state.sessionCorrect++;
     feedbackPanel.className = 'feedback-panel feedback-correct';
     feedbackPanel.innerHTML = `<p class="feedback-message">${randomFrom(PRAISE_MESSAGES)} ✅</p>`;
-    launchConfetti(24);
+    launchConfetti(45);
+    launchSparkleBurst();
     updateProgressBar();
     const newlyUnlocked = checkUnlocks();
     if (newlyUnlocked.length > 0) {
@@ -699,6 +745,26 @@ function launchConfetti(count) {
     piece.style.animationDelay = `${Math.random() * 0.2}s`;
     layer.appendChild(piece);
     piece.addEventListener('animationend', () => piece.remove());
+  }
+}
+
+// A handful of floating sparkle emoji rising from the question card, for
+// extra festivity on every correct answer (separate from the falling confetti).
+function launchSparkleBurst() {
+  const card = document.querySelector('.question-card');
+  if (!card) return;
+  const sparkles = ['✨', '⭐', '🌟', '💖', '🎉'];
+  const rect = card.getBoundingClientRect();
+  for (let i = 0; i < 10; i++) {
+    const el = document.createElement('div');
+    el.className = 'sparkle-piece';
+    el.textContent = sparkles[randInt(0, sparkles.length - 1)];
+    el.style.left = `${rect.left + rect.width * Math.random()}px`;
+    el.style.top = `${rect.top + rect.height * 0.5}px`;
+    el.style.setProperty('--drift', `${randInt(-40, 40)}px`);
+    el.style.animationDuration = `${0.9 + Math.random() * 0.6}s`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
   }
 }
 
