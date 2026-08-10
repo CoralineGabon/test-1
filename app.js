@@ -475,19 +475,19 @@ const ACCESSORY_RENDERERS = {
   flowerCrown: (c) => `<circle cx="82" cy="34" r="4" fill="${c.color}"/><circle cx="94" cy="28" r="4" fill="${c.accentColor}"/><circle cx="106" cy="28" r="4" fill="${c.color}"/><circle cx="118" cy="34" r="4" fill="${c.accentColor}"/>`,
   veil: (c) => `<path d="M100,30 Q60,60 66,120 Q70,70 100,50 Q130,70 134,120 Q140,60 100,30 Z" fill="${c.color}" opacity="0.35"/>`,
   gloves: (c) => `<ellipse cx="68" cy="132" rx="7" ry="9" fill="${c.color}"/><ellipse cx="132" cy="132" rx="7" ry="9" fill="${c.color}"/>`,
-  necklace: (c) => `<path d="M86,78 Q100,90 114,78" fill="none" stroke="${c.color}" stroke-width="3" stroke-linecap="round"/>`,
-  starEarrings: (c) => `<path d="M78,68 l2,4 l4,0 l-3,3 l1,4 l-4,-2 l-4,2 l1,-4 l-3,-3 l4,0 z" fill="${c.color}"/><path d="M122,68 l2,4 l4,0 l-3,3 l1,4 l-4,-2 l-4,2 l1,-4 l-3,-3 l4,0 z" fill="${c.color}"/>`,
+  necklace: (c) => `<path d="M85,96 Q100,112 115,96" fill="none" stroke="${c.color}" stroke-width="3" stroke-linecap="round"/>`,
+  starEarrings: (c) => `<path d="M67,65 l2,4 l4,0 l-3,3 l1,4 l-4,-2 l-4,2 l1,-4 l-3,-3 l4,0 z" fill="${c.color}"/><path d="M133,65 l2,4 l4,0 l-3,3 l1,4 l-4,-2 l-4,2 l1,-4 l-3,-3 l4,0 z" fill="${c.color}"/>`,
   bracelet: (c) => `<ellipse cx="66" cy="122" rx="5" ry="3" fill="none" stroke="${c.color}" stroke-width="2"/>`,
   mic: (c) => `<rect x="140" y="110" width="7" height="18" rx="3" fill="${c.color}"/><circle cx="143.5" cy="106" r="6" fill="${c.accentColor}"/>`,
   sunglasses: (c) => `<rect x="82" y="60" width="15" height="9" rx="3" fill="${c.color}"/><rect x="103" y="60" width="15" height="9" rx="3" fill="${c.color}"/><path d="M97,64 L103,64" stroke="${c.color}" stroke-width="2"/>`,
   minibag: (c) => `<rect x="128" y="148" width="14" height="12" rx="2" fill="${c.color}"/><path d="M131,148 Q135,142 139,148" fill="none" stroke="${c.accentColor}" stroke-width="1.5"/>`,
   fan: (c) => `<path d="M136,110 Q150,90 148,120 Q142,112 136,110 Z" fill="${c.color}"/>`,
-  headphones: (c) => `<path d="M78,50 Q100,26 122,50" fill="none" stroke="${c.color}" stroke-width="4"/><circle cx="78" cy="54" r="6" fill="${c.accentColor}"/><circle cx="122" cy="54" r="6" fill="${c.accentColor}"/>`,
+  headphones: (c) => `<path d="M70,62 Q100,24 130,62" fill="none" stroke="${c.color}" stroke-width="4"/><circle cx="69" cy="64" r="7" fill="${c.accentColor}"/><circle cx="131" cy="64" r="7" fill="${c.accentColor}"/>`,
   crown: (c) => `<path d="M82,36 L88,20 L96,32 L100,18 L104,32 L112,20 L118,36 Z" fill="${c.color}" stroke="${c.accentColor}" stroke-width="1"/>`,
   longGloves: (c) => `<rect x="63" y="112" width="10" height="28" rx="5" fill="${c.color}"/><rect x="127" y="112" width="10" height="28" rx="5" fill="${c.color}"/>`,
   chainBelt: (c) => `<rect x="78" y="118" width="44" height="6" rx="3" fill="none" stroke="${c.color}" stroke-width="2" stroke-dasharray="3,2"/>`,
   bucketHat: (c) => `<path d="M78,32 Q100,18 122,32 L126,42 L74,42 Z" fill="${c.color}"/>`,
-  earpiece: (c) => `<circle cx="76" cy="72" r="3" fill="${c.color}"/>`,
+  earpiece: (c) => `<circle cx="68" cy="65" r="3" fill="${c.color}"/><path d="M68,68 Q66,74 70,78" fill="none" stroke="${c.color}" stroke-width="1.5"/>`,
 };
 
 function renderDollSVG() {
