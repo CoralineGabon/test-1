@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -16,6 +16,9 @@
 
   <!-- Unlock celebration overlay -->
   <div id="unlock-overlay" class="unlock-overlay"></div>
+
+  <!-- Full-screen collection viewer (navigable unlocked images) -->
+  <div id="collection-viewer" class="collection-viewer"></div>
 
   <!-- ===================== WELCOME SCREEN ===================== -->
   <section id="welcome-screen" class="welcome-screen">
@@ -47,7 +50,10 @@
   <section id="game-screen" class="game-screen hidden">
     <header class="app-header">
       <h1 class="app-title">Apollines Mathe-Magie ✨</h1>
-      <button id="wardrobe-toggle-btn" class="secondary-btn">👗 Garderobe</button>
+      <div class="header-buttons">
+        <button id="gallery-toggle-btn" class="secondary-btn">🖼️ Galerie</button>
+        <button id="collection-toggle-btn" class="secondary-btn">📸 Meine Sammlung</button>
+      </div>
     </header>
 
     <div class="main-layout">
@@ -57,7 +63,7 @@
           <div class="progress-track">
             <div id="progress-fill" class="progress-fill"></div>
           </div>
-          <div id="progress-label" class="progress-label">⭐ 0 / 10 für das nächste Outfit!</div>
+          <div id="progress-label" class="progress-label">⭐ 0 / 10 für das nächste Bild!</div>
         </div>
 
         <div class="question-card">
@@ -81,22 +87,22 @@
         </div>
       </div>
 
-      <!-- RIGHT: doll + wardrobe -->
-      <div class="doll-panel">
-        <div id="doll-display" class="doll-display"></div>
+      <!-- RIGHT: showcase (last unlocked image + shortcuts) -->
+      <div class="showcase-panel">
+        <div id="showcase-content" class="showcase-content"></div>
       </div>
     </div>
 
-    <!-- Wardrobe slide-over panel -->
-    <div id="wardrobe-panel" class="wardrobe-panel">
-      <div class="wardrobe-header">
-        <h2>Garderobe 👗✨</h2>
-        <button id="wardrobe-close-btn" class="close-btn" aria-label="Schließen">✕</button>
+    <!-- Gallery slide-over panel: grid of all images, locked + unlocked -->
+    <div id="gallery-panel" class="gallery-panel">
+      <div class="gallery-header">
+        <h2>Bildergalerie 🖼️✨</h2>
+        <button id="gallery-close-btn" class="close-btn" aria-label="Schließen">✕</button>
       </div>
-      <div id="wardrobe-content" class="wardrobe-content"></div>
+      <div id="gallery-content" class="gallery-content"></div>
     </div>
   </section>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

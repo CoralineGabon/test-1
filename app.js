@@ -2,99 +2,86 @@
 
 /* =========================================================================
    APOLLINE MATHE-MAGIE — app.js
-   Vanille JS, aucune dépendance externe.
+   Vanille JS, aucune dépendance externe (hormis les photos de la galerie,
+   chargées depuis le CDN Pexels — licence Pexels : libres de droits,
+   utilisation gratuite, attribution non requise).
    ========================================================================= */
 
 /* -------------------------------------------------------------------------
-   1. WARDROBE DATA (~50 items across 5 categories)
+   1. GALLERY DATA (~50 free-license photos across 3 themes)
    ------------------------------------------------------------------------- */
 
 const CATEGORY_LABELS = {
-  ballerina: 'Ballerina-Outfits',
-  kpopOutfit: 'K-Pop-Idol-Outfits',
-  danceAcc: 'Tanz-Accessoires',
-  kpopAcc: 'K-Pop & Model Accessoires',
-  modelOutfit: 'Top-Model-Outfits',
+  ballet: 'Ballett',
+  fashion: 'Mode & Défilé',
+  dance: 'Moderner Tanz',
 };
 
-// Raw item definitions, grouped by category (German display names).
-const RAW_ITEMS = {
-  ballerina: [
-    { name: 'Klassisches rosa Tutu', template: 'tutu', special: null, hue: 335 },
-    { name: 'Lavendel-Tutu', template: 'tutu', special: null, hue: 265 },
-    { name: 'Sternen-Tutu (weiß)', template: 'tutu', special: 'stars' },
-    { name: 'Goldener Trikot-Anzug', template: 'leotard', special: 'gold' },
-    { name: 'Rotes Tutu', template: 'tutu', special: null, hue: 355 },
-    { name: 'Blaues Übungskleid', template: 'dress', special: null, hue: 210 },
-    { name: 'Mint-Tutu', template: 'tutu', special: null, hue: 165 },
-    { name: 'Tanz-Umhang', template: 'cape', special: null, hue: 280 },
-    { name: 'Regenbogen-Tutu', template: 'tutu', special: 'rainbow' },
-    { name: 'Ballerina-Galakleid', template: 'gown', special: null, hue: 340 },
+// Real photos from Pexels (free license, no attribution required).
+// URL pattern: https://images.pexels.com/photos/{pexelsId}/pexels-photo-{pexelsId}.jpeg
+const RAW_GALLERY = {
+  ballet: [
+    { pexelsId: 8935909, title: 'Rosa Ballettschuhe' },
+    { pexelsId: 35874285, title: 'Ballerina-Figur mit Spitzenschuhen' },
+    { pexelsId: 10640401, title: 'Spitzenschuhe auf Holzboden' },
+    { pexelsId: 8462946, title: 'Ballerina im weißen Tutu' },
+    { pexelsId: 11423560, title: 'Tänzerin auf einem Stuhl' },
+    { pexelsId: 6616908, title: 'Ballerina mit erhobenem Bein' },
+    { pexelsId: 10628896, title: 'Schatten einer Ballerina' },
+    { pexelsId: 5888633, title: 'Ballerina im Sonnenlicht' },
+    { pexelsId: 11411300, title: 'Ballerina auf der Treppe' },
+    { pexelsId: 2803819, title: 'Ballett-Sprung auf der Bühne' },
+    { pexelsId: 17029893, title: 'Tanzpose auf der Bühne' },
+    { pexelsId: 34779230, title: 'Anmutige Ballerina' },
+    { pexelsId: 16233597, title: 'Tanzfigur im Ballett' },
+    { pexelsId: 8853793, title: 'Ballett-Probe im Studio' },
+    { pexelsId: 8462936, title: 'Ballerina beim Dehnen' },
+    { pexelsId: 31337085, title: 'Ballett in Bewegung' },
+    { pexelsId: 8463024, title: 'Tanzpaar in Bewegung' },
+    { pexelsId: 7667554, title: 'Kinder beim Tanzen' },
+    { pexelsId: 6160476, title: 'Ballerina in Schwarz' },
   ],
-  kpopOutfit: [
-    { name: 'Holo-Bühnenoutfit', template: 'jumpsuit', special: 'holo' },
-    { name: 'Oversized-Pailletten-Jacke', template: 'jacket', special: 'sequin', hue: 220 },
-    { name: 'Sequin-Crop-Top-Set', template: 'crop', special: 'sequin', hue: 300 },
-    { name: 'Neon-Videoclip-Outfit', template: 'crop', special: 'neon' },
-    { name: 'Koreanische Schuluniform', template: 'uniform', special: null, hue: 220 },
-    { name: 'K-Pop-Streetwear', template: 'jacket', special: null, hue: 20 },
-    { name: 'Silbernes Comeback-Kleid', template: 'dress', special: 'silver' },
-    { name: 'Pastell-Idol-Set', template: 'crop', special: null, hue: 300 },
-    { name: 'Bomberjacke', template: 'jacket', special: null, hue: 25 },
-    { name: 'Fan-Meeting-Outfit', template: 'dress', special: null, hue: 350 },
-    { name: 'Girl-Crush-Lederlook (rosa)', template: 'jumpsuit', special: null, hue: 330 },
-    { name: 'Konzert-Outfit weiß-gold', template: 'jumpsuit', special: 'gold' },
-    { name: 'Showcase-Outfit', template: 'crop', special: null, hue: 45 },
-    { name: 'Süßes Bonbon-Rosa-Outfit', template: 'dress', special: null, hue: 330 },
-    { name: 'Music-Show-Outfit', template: 'jacket', special: 'sequin', hue: 260 },
+  fashion: [
+    { pexelsId: 13045753, title: 'Model auf dem Laufsteg' },
+    { pexelsId: 8793626, title: 'Model bei der Modenschau' },
+    { pexelsId: 9511239, title: 'Auftritt bei der Modenschau' },
+    { pexelsId: 5185590, title: 'Kleid auf dem Laufsteg' },
+    { pexelsId: 14801125, title: 'Porträt im eleganten Kleid' },
+    { pexelsId: 18651085, title: 'Laufsteg-Moment' },
+    { pexelsId: 15740610, title: 'Blaues Kleid auf dem Laufsteg' },
+    { pexelsId: 9509318, title: 'Weißes Kleid auf dem Laufsteg' },
+    { pexelsId: 19837893, title: 'Rotes Kleid auf dem Laufsteg' },
+    { pexelsId: 13191609, title: 'Festliches Gewand auf dem Laufsteg' },
+    { pexelsId: 18650819, title: 'Model im weißen Outfit' },
+    { pexelsId: 17503286, title: 'Farbenfrohes Gewand' },
+    { pexelsId: 30706568, title: 'Schwarzes Kleid im Studio' },
+    { pexelsId: 30736117, title: 'Weißes Kleid im Fotostudio' },
+    { pexelsId: 17570989, title: 'Elegantes Schwarz im Studio' },
+    { pexelsId: 35073807, title: 'Oranges Kleid, Studio-Look' },
+    { pexelsId: 30736118, title: 'High-Fashion im Studio' },
   ],
-  danceAcc: [
-    { name: 'Spitzenschuhe', slot: 'feet', shape: 'shoes' },
-    { name: 'Dutt mit Diadem', slot: 'head', shape: 'tiara' },
-    { name: 'Haarband', slot: 'head', shape: 'ribbon' },
-    { name: 'Tanztasche', slot: 'held', shape: 'bag' },
-    { name: 'Blumenkrone', slot: 'head', shape: 'flowerCrown' },
-    { name: 'Tänzerin-Schleier', slot: 'back', shape: 'veil' },
-    { name: 'Pailletten-Handschuhe', slot: 'hands', shape: 'gloves' },
-    { name: 'Perlenkette', slot: 'neck', shape: 'necklace' },
-    { name: 'Stern-Ohrringe', slot: 'ears', shape: 'starEarrings' },
-    { name: 'Bühnen-Armband', slot: 'wrist', shape: 'bracelet' },
-  ],
-  kpopAcc: [
-    { name: 'Bühnenmikrofon', slot: 'held', shape: 'mic' },
-    { name: 'Sonnenbrille', slot: 'face', shape: 'sunglasses' },
-    { name: 'Mini-Handtasche', slot: 'held', shape: 'minibag' },
-    { name: 'Holo-Fächer', slot: 'held', shape: 'fan' },
-    { name: 'Colorblock-Kopfhörer', slot: 'head', shape: 'headphones' },
-    { name: 'Idol-Krone', slot: 'head', shape: 'crown' },
-    { name: 'Lange goldene Handschuhe', slot: 'hands', shape: 'longGloves', hue: 45 },
-    { name: 'Ketten-Gürtel', slot: 'belt', shape: 'chainBelt' },
-    { name: 'Bucket Hat', slot: 'head', shape: 'bucketHat' },
-    { name: 'Bühnen-Ohrhörer', slot: 'ears', shape: 'earpiece' },
-  ],
-  modelOutfit: [
-    { name: 'Haute-Couture-Laufstegkleid', template: 'gown', special: null, hue: 300 },
-    { name: 'Eleganter Hosenanzug', template: 'suit', special: null, hue: 230 },
-    { name: 'Sternen-Abendkleid', template: 'gown', special: 'stars' },
-    { name: 'Pastell-Trenchcoat', template: 'coat', special: null, hue: 30 },
-    { name: 'Fashion-Jumpsuit', template: 'jumpsuit', special: null, hue: 190 },
+  dance: [
+    { pexelsId: 5368935, title: 'Streetdance am Fluss' },
+    { pexelsId: 34106575, title: 'Tanzpose vor Wandbild' },
+    { pexelsId: 29046685, title: 'Zeitgenössischer Tanz' },
+    { pexelsId: 8928882, title: 'Tanz auf der Straße' },
+    { pexelsId: 18355844, title: 'Tanzende Freunde' },
+    { pexelsId: 7502601, title: 'Tanz im Freien' },
+    { pexelsId: 10001398, title: 'Tanz in Schwarz-Weiß' },
+    { pexelsId: 11063372, title: 'Breakdance-Moment' },
+    { pexelsId: 7972032, title: 'Im Rampenlicht' },
+    { pexelsId: 1260580, title: 'Tanz am Zebrastreifen' },
+    { pexelsId: 17130464, title: 'Tanz auf dem Marktplatz' },
+    { pexelsId: 10570889, title: 'Tanz im Weizenfeld' },
+    { pexelsId: 6221578, title: 'Zeitgenössischer Tanz im Studio' },
+    { pexelsId: 3949703, title: 'Tänzerin im rosa Kleid' },
+    { pexelsId: 19331601, title: 'Traditioneller Tanz beim Fest' },
+    { pexelsId: 15964960, title: 'Tanzende Menge' },
   ],
 };
 
-// Pastel kawaii color palette generator (HSL based, deterministic per index).
-function paletteFor(hueSeed, special) {
-  if (special === 'gold') return { primary: '#f5c542', secondary: '#fff2c2', accent: '#ffffff' };
-  if (special === 'silver') return { primary: '#cfd8e3', secondary: '#f0f4f8', accent: '#ffffff' };
-  if (special === 'stars') return { primary: '#ffffff', secondary: '#eef1ff', accent: '#ffd54f' };
-  if (special === 'rainbow') return { primary: 'url(#rainbowGrad)', secondary: '#ffffff', accent: '#ffd54f' };
-  if (special === 'holo') return { primary: 'url(#holoGrad)', secondary: '#e0d4ff', accent: '#ffffff' };
-  if (special === 'sequin') return { primary: `hsl(${hueSeed},70%,75%)`, secondary: `hsl(${hueSeed},80%,90%)`, accent: '#ffffff' };
-  if (special === 'neon') return { primary: `hsl(${hueSeed},90%,65%)`, secondary: `hsl(${(hueSeed + 40) % 360},90%,70%)`, accent: '#ffffff' };
-  return {
-    primary: `hsl(${hueSeed},70%,80%)`,
-    secondary: `hsl(${hueSeed},70%,92%)`,
-    accent: `hsl(${(hueSeed + 30) % 360},70%,60%)`,
-  };
+function pexelsUrl(pexelsId, width) {
+  return `https://images.pexels.com/photos/${pexelsId}/pexels-photo-${pexelsId}.jpeg?auto=compress&cs=tinysrgb&w=${width}`;
 }
 
 // Round-robin interleave of several arrays to build a varied unlock order.
@@ -109,50 +96,23 @@ function interleave(arrays) {
   return result;
 }
 
-function buildWardrobe() {
+function buildGallery() {
   const buckets = {};
-  for (const cat of Object.keys(RAW_ITEMS)) {
-    buckets[cat] = RAW_ITEMS[cat].map((raw, i) => {
-      const id = `${cat}_${i}`;
-      const autoHue = Math.round((i / RAW_ITEMS[cat].length) * 360 + (cat.length * 17) % 360) % 360;
-      const hueSeed = (typeof raw.hue === 'number') ? raw.hue : autoHue;
-      if (raw.slot) {
-        // accessory
-        return {
-          id,
-          name: raw.name,
-          category: cat,
-          slot: raw.slot,
-          kind: 'accessory',
-          shape: raw.shape,
-          color: `hsl(${hueSeed},75%,70%)`,
-          accentColor: `hsl(${(hueSeed + 40) % 360},80%,60%)`,
-        };
-      }
-      return {
-        id,
-        name: raw.name,
-        category: cat,
-        slot: 'outfit',
-        kind: 'outfit',
-        template: raw.template,
-        colors: paletteFor(hueSeed, raw.special),
-      };
-    });
+  for (const cat of Object.keys(RAW_GALLERY)) {
+    buckets[cat] = RAW_GALLERY[cat].map((raw) => ({
+      id: `p${raw.pexelsId}`,
+      category: cat,
+      title: raw.title,
+      thumbUrl: pexelsUrl(raw.pexelsId, 360),
+      fullUrl: pexelsUrl(raw.pexelsId, 1000),
+    }));
   }
-  const order = interleave([
-    buckets.ballerina,
-    buckets.kpopOutfit,
-    buckets.danceAcc,
-    buckets.kpopAcc,
-    buckets.modelOutfit,
-  ]);
-  return order;
+  return interleave([buckets.ballet, buckets.fashion, buckets.dance]);
 }
 
-const WARDROBE_ITEMS = buildWardrobe();
-const TOTAL_ITEMS = WARDROBE_ITEMS.length;
-const ITEMS_BY_ID = Object.fromEntries(WARDROBE_ITEMS.map((it) => [it.id, it]));
+const GALLERY_ITEMS = buildGallery();
+const TOTAL_ITEMS = GALLERY_ITEMS.length;
+const ITEMS_BY_ID = Object.fromEntries(GALLERY_ITEMS.map((it) => [it.id, it]));
 
 /* -------------------------------------------------------------------------
    2. UNLOCK PROGRESSION
@@ -176,9 +136,7 @@ function unlockedCountForSessionTotal(count) {
    ------------------------------------------------------------------------- */
 
 const STORAGE_KEYS = {
-  unlockedCount: 'apolline_unlocked_count', // legacy key, migrated on load
-  unlockedIds: 'apolline_unlocked_ids',
-  equipped: 'apolline_equipped',
+  unlockedIds: 'apolline_gallery_unlocked_ids',
 };
 
 function loadJSON(key, fallback) {
@@ -209,26 +167,12 @@ function shuffle(arr) {
   return a;
 }
 
-// Loads the set of unlocked item ids. Migrates from the old "first N items
-// in a fixed order" scheme (apolline_unlocked_count) to a random selection,
-// so nobody's already-earned progress is lost when this scheme changed.
 function loadUnlockedIds() {
   const stored = loadJSON(STORAGE_KEYS.unlockedIds, null);
   if (Array.isArray(stored)) {
     return stored.filter((id) => ITEMS_BY_ID[id]).slice(0, TOTAL_ITEMS);
   }
-  const legacyCount = loadJSON(STORAGE_KEYS.unlockedCount, 0);
-  if (typeof legacyCount === 'number' && legacyCount > 0) {
-    const migrated = shuffle(WARDROBE_ITEMS.map((it) => it.id)).slice(0, Math.min(legacyCount, TOTAL_ITEMS));
-    saveJSON(STORAGE_KEYS.unlockedIds, migrated);
-    return migrated;
-  }
   return [];
-}
-
-function loadEquipped() {
-  const v = loadJSON(STORAGE_KEYS.equipped, {});
-  return (v && typeof v === 'object') ? v : {};
 }
 
 /* -------------------------------------------------------------------------
@@ -238,14 +182,13 @@ function loadEquipped() {
 const state = {
   sessionCorrect: 0,                       // resets every reload
   unlockedIds: new Set(loadUnlockedIds()), // persists (random per unlock)
-  equipped: loadEquipped(),                // persists: { slot: itemId }
   currentQuestion: null,
   lastQuestionKey: null,
   answered: false,
 };
 
 function unlockedItems() {
-  return WARDROBE_ITEMS.filter((it) => state.unlockedIds.has(it.id));
+  return GALLERY_ITEMS.filter((it) => state.unlockedIds.has(it.id));
 }
 
 function isUnlocked(item) {
@@ -301,11 +244,6 @@ function buildQuestion(op) {
    6. SINGAPORE-STYLE VISUAL REPRESENTATION
    ------------------------------------------------------------------------- */
 
-function svgEl(tag, attrs, children) {
-  const attrStr = Object.entries(attrs || {}).map(([k, v]) => `${k}="${v}"`).join(' ');
-  return `<${tag} ${attrStr}>${children || ''}</${tag}>`;
-}
-
 function buildVisual(q) {
   if (q.op === 'add') return buildBarAddition(q);
   if (q.op === 'sub') return buildBarSubtraction(q);
@@ -315,9 +253,7 @@ function buildVisual(q) {
 
 // Bar model: proportional rectangle split into two labeled parts.
 function buildBarAddition(q) {
-  const total = 100;
   const width = 320;
-  const wa = Math.max(24, (q.a / total) * width * (100 / q.result <= 1 ? 1 : 1));
   const waFinal = (q.a / (q.a + q.b)) * width;
   const wbFinal = width - waFinal;
   return `
@@ -334,13 +270,12 @@ function buildBarAddition(q) {
 
 function buildBarSubtraction(q) {
   const width = 320;
-  const wTotal = width;
   const wb = (q.b / q.a) * width;
   const wRest = width - wb;
   return `
     <div class="bar-model" role="img" aria-label="Streifenmodell Subtraktion">
       <div class="bar-row">
-        <div class="bar-segment bar-total" style="width:${wTotal}px">${q.a}</div>
+        <div class="bar-segment bar-total" style="width:${width}px">${q.a}</div>
       </div>
       <div class="bar-row">
         <div class="bar-segment bar-b" style="width:${wb}px">${q.b}</div>
@@ -403,224 +338,147 @@ const GENTLE_MESSAGES = [
   'Gute Idee, aber schau mal hier die richtige Lösung.',
 ];
 
+const UNLOCK_MESSAGES = [
+  'Neues Bild für deine Sammlung!',
+  'Du hast ein Bild freigeschaltet!',
+  'Wow, schau mal, was du gewonnen hast!',
+  'Ein neuer Schatz für deine Galerie!',
+  'Klasse! Deine Sammlung wächst!',
+];
+
 function randomFrom(arr) {
   return arr[randInt(0, arr.length - 1)];
 }
 
 /* -------------------------------------------------------------------------
-   8. DOLL RENDERING (SVG)
+   8. GALLERY UI (grid + showcase + collection viewer)
    ------------------------------------------------------------------------- */
 
-// Builds a simple, anatomically-safe garment silhouette from a list of
-// {y, half} waypoints given TOP TO BOTTOM (shoulder -> hem). The path always
-// walks down the left side in increasing y, bulges the hem gently downward
-// (natural drape direction), then walks back up the right side — so the
-// shape can never come out inverted regardless of the waypoints chosen.
-function garmentPath(waypoints, hemBulge) {
-  hemBulge = hemBulge === undefined ? 8 : hemBulge;
-  const left = waypoints.map((p) => ({ x: 100 - p.half, y: p.y }));
-  const right = waypoints.map((p) => ({ x: 100 + p.half, y: p.y }));
-  const n = waypoints.length;
-  let d = `M ${left[0].x},${left[0].y}`;
-  for (let i = 1; i < n; i++) d += ` L ${left[i].x},${left[i].y}`;
-  const hemY = waypoints[n - 1].y + hemBulge;
-  d += ` Q 100,${hemY} ${right[n - 1].x},${right[n - 1].y}`;
-  for (let i = n - 2; i >= 0; i--) d += ` L ${right[i].x},${right[i].y}`;
-  d += ' Z';
-  return d;
+const CATEGORY_ICONS = { ballet: '🩰', fashion: '👗', dance: '💃' };
+
+// A locked thumbnail never loads its real image — just a tinted placeholder
+// with a lock, so nothing is fetched (or peekable) before it's earned.
+function lockedThumbHTML() {
+  return `<div class="thumb-locked"><span class="lock-icon">🔒</span></div>`;
 }
 
-const OUTFIT_TEMPLATES = {
-  // Fitted bodice, then a sudden wide flare — classic ballet tutu.
-  tutu: (c) => `
-    <path d="${garmentPath([{ y: 92, half: 14 }, { y: 118, half: 13 }, { y: 120, half: 40 }], 8)}" fill="${c.secondary}"/>
-    <path d="${garmentPath([{ y: 92, half: 14 }, { y: 118, half: 13 }], 4)}" fill="${c.primary}"/>`,
-  leotard: (c) => `
-    <path d="${garmentPath([{ y: 92, half: 14 }, { y: 155, half: 13 }], 6)}" fill="${c.primary}"/>`,
-  dress: (c) => `
-    <path d="${garmentPath([{ y: 92, half: 15 }, { y: 130, half: 16 }, { y: 175, half: 24 }], 8)}" fill="${c.primary}"/>
-    <path d="${garmentPath([{ y: 92, half: 15 }, { y: 112, half: 16 }], 3)}" fill="${c.secondary}"/>`,
-  cape: (c) => `
-    <path d="${garmentPath([{ y: 88, half: 20 }, { y: 160, half: 34 }], 10)}" fill="${c.primary}" opacity="0.85"/>
-    <path d="${garmentPath([{ y: 92, half: 14 }, { y: 155, half: 13 }], 6)}" fill="${c.secondary}"/>`,
-  gown: (c) => `
-    <path d="${garmentPath([{ y: 90, half: 16 }, { y: 130, half: 18 }, { y: 205, half: 30 }], 10)}" fill="${c.primary}"/>
-    <path d="${garmentPath([{ y: 90, half: 16 }, { y: 112, half: 17 }], 3)}" fill="${c.secondary}"/>`,
-  jumpsuit: (c) => `
-    <path d="${garmentPath([{ y: 92, half: 15 }, { y: 150, half: 16 }, { y: 210, half: 14 }], 6)}" fill="${c.primary}"/>
-    <path d="${garmentPath([{ y: 92, half: 15 }, { y: 112, half: 16 }], 3)}" fill="${c.secondary}"/>`,
-  jacket: (c) => `
-    <path d="${garmentPath([{ y: 145, half: 15 }, { y: 175, half: 24 }], 8)}" fill="${c.secondary}"/>
-    <path d="${garmentPath([{ y: 88, half: 17 }, { y: 145, half: 16 }], 4)}" fill="${c.primary}"/>`,
-  crop: (c) => `
-    <path d="${garmentPath([{ y: 128, half: 14 }, { y: 172, half: 26 }], 8)}" fill="${c.secondary}"/>
-    <path d="${garmentPath([{ y: 92, half: 14 }, { y: 118, half: 13 }], 4)}" fill="${c.primary}"/>`,
-  uniform: (c) => `
-    <path d="${garmentPath([{ y: 132, half: 14 }, { y: 168, half: 22 }], 6)}" fill="${c.secondary}"/>
-    <path d="${garmentPath([{ y: 90, half: 15 }, { y: 128, half: 14 }], 4)}" fill="${c.primary}"/>
-    <path d="M92,90 L100,108 L108,90" fill="none" stroke="${c.accent}" stroke-width="2"/>`,
-  suit: (c) => `
-    <path d="${garmentPath([{ y: 90, half: 15 }, { y: 150, half: 15 }, { y: 205, half: 13 }], 5)}" fill="${c.primary}"/>
-    <path d="M88,90 L100,118 L112,90" fill="none" stroke="${c.accent}" stroke-width="2"/>`,
-  coat: (c) => `
-    <path d="${garmentPath([{ y: 88, half: 18 }, { y: 150, half: 19 }, { y: 210, half: 26 }], 9)}" fill="${c.primary}"/>
-    <path d="M100,90 L100,205" stroke="${c.accent}" stroke-width="1.5" opacity="0.5"/>`,
-};
-
-const ACCESSORY_RENDERERS = {
-  shoes: (c) => `<ellipse cx="88" cy="238" rx="9" ry="5" fill="${c.color}"/><ellipse cx="112" cy="238" rx="9" ry="5" fill="${c.color}"/>`,
-  tiara: (c) => `<path d="M84,38 L92,24 L100,34 L108,24 L116,38 Z" fill="${c.color}" stroke="${c.accentColor}" stroke-width="1"/>`,
-  ribbon: (c) => `<path d="M70,40 Q78,28 88,38 Q78,44 70,40 Z" fill="${c.color}"/><circle cx="72" cy="39" r="3" fill="${c.accentColor}"/>`,
-  bag: (c) => `<rect x="130" y="150" width="18" height="16" rx="3" fill="${c.color}"/><path d="M133,150 Q139,140 145,150" fill="none" stroke="${c.accentColor}" stroke-width="2"/>`,
-  flowerCrown: (c) => `<circle cx="82" cy="34" r="4" fill="${c.color}"/><circle cx="94" cy="28" r="4" fill="${c.accentColor}"/><circle cx="106" cy="28" r="4" fill="${c.color}"/><circle cx="118" cy="34" r="4" fill="${c.accentColor}"/>`,
-  veil: (c) => `<path d="M100,30 Q60,60 66,120 Q70,70 100,50 Q130,70 134,120 Q140,60 100,30 Z" fill="${c.color}" opacity="0.35"/>`,
-  gloves: (c) => `<ellipse cx="68" cy="132" rx="7" ry="9" fill="${c.color}"/><ellipse cx="132" cy="132" rx="7" ry="9" fill="${c.color}"/>`,
-  necklace: (c) => `<path d="M85,96 Q100,112 115,96" fill="none" stroke="${c.color}" stroke-width="3" stroke-linecap="round"/>`,
-  starEarrings: (c) => `<path d="M67,65 l2,4 l4,0 l-3,3 l1,4 l-4,-2 l-4,2 l1,-4 l-3,-3 l4,0 z" fill="${c.color}"/><path d="M133,65 l2,4 l4,0 l-3,3 l1,4 l-4,-2 l-4,2 l1,-4 l-3,-3 l4,0 z" fill="${c.color}"/>`,
-  bracelet: (c) => `<ellipse cx="66" cy="122" rx="5" ry="3" fill="none" stroke="${c.color}" stroke-width="2"/>`,
-  mic: (c) => `<rect x="140" y="110" width="7" height="18" rx="3" fill="${c.color}"/><circle cx="143.5" cy="106" r="6" fill="${c.accentColor}"/>`,
-  sunglasses: (c) => `<rect x="82" y="60" width="15" height="9" rx="3" fill="${c.color}"/><rect x="103" y="60" width="15" height="9" rx="3" fill="${c.color}"/><path d="M97,64 L103,64" stroke="${c.color}" stroke-width="2"/>`,
-  minibag: (c) => `<rect x="128" y="148" width="14" height="12" rx="2" fill="${c.color}"/><path d="M131,148 Q135,142 139,148" fill="none" stroke="${c.accentColor}" stroke-width="1.5"/>`,
-  fan: (c) => `<path d="M136,110 Q150,90 148,120 Q142,112 136,110 Z" fill="${c.color}"/>`,
-  headphones: (c) => `<path d="M70,62 Q100,24 130,62" fill="none" stroke="${c.color}" stroke-width="4"/><circle cx="69" cy="64" r="7" fill="${c.accentColor}"/><circle cx="131" cy="64" r="7" fill="${c.accentColor}"/>`,
-  crown: (c) => `<path d="M82,36 L88,20 L96,32 L100,18 L104,32 L112,20 L118,36 Z" fill="${c.color}" stroke="${c.accentColor}" stroke-width="1"/>`,
-  longGloves: (c) => `<rect x="63" y="112" width="10" height="28" rx="5" fill="${c.color}"/><rect x="127" y="112" width="10" height="28" rx="5" fill="${c.color}"/>`,
-  chainBelt: (c) => `<rect x="78" y="118" width="44" height="6" rx="3" fill="none" stroke="${c.color}" stroke-width="2" stroke-dasharray="3,2"/>`,
-  bucketHat: (c) => `<path d="M78,32 Q100,18 122,32 L126,42 L74,42 Z" fill="${c.color}"/>`,
-  earpiece: (c) => `<circle cx="68" cy="65" r="3" fill="${c.color}"/><path d="M68,68 Q66,74 70,78" fill="none" stroke="${c.color}" stroke-width="1.5"/>`,
-};
-
-function renderDollSVG() {
-  const outfitId = state.equipped.outfit;
-  const outfitItem = outfitId ? ITEMS_BY_ID[outfitId] : null;
-  const outfitSVG = outfitItem && OUTFIT_TEMPLATES[outfitItem.template]
-    ? OUTFIT_TEMPLATES[outfitItem.template](outfitItem.colors)
-    : OUTFIT_TEMPLATES.dress(paletteFor(330, null));
-
-  let accessoriesSVG = '';
-  for (const slot of Object.keys(state.equipped)) {
-    if (slot === 'outfit') continue;
-    const itemId = state.equipped[slot];
-    const item = itemId ? ITEMS_BY_ID[itemId] : null;
-    if (item && ACCESSORY_RENDERERS[item.shape]) {
-      accessoriesSVG += ACCESSORY_RENDERERS[item.shape](item);
-    }
-  }
-
-  return `
-  <svg viewBox="0 0 200 250" class="doll-svg" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="rainbowGrad" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="#ff9aa2"/>
-        <stop offset="20%" stop-color="#ffd6a5"/>
-        <stop offset="40%" stop-color="#fdffb6"/>
-        <stop offset="60%" stop-color="#caffbf"/>
-        <stop offset="80%" stop-color="#9bf6ff"/>
-        <stop offset="100%" stop-color="#bdb2ff"/>
-      </linearGradient>
-      <linearGradient id="holoGrad" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#a0c4ff"/>
-        <stop offset="50%" stop-color="#bdb2ff"/>
-        <stop offset="100%" stop-color="#ffc6ff"/>
-      </linearGradient>
-    </defs>
-    <!-- legs -->
-    <rect x="90" y="150" width="8" height="70" rx="4" fill="#ffe0c2"/>
-    <rect x="102" y="150" width="8" height="70" rx="4" fill="#ffe0c2"/>
-    <!-- arms -->
-    <rect x="62" y="98" width="9" height="45" rx="4" fill="#ffe0c2"/>
-    <rect x="129" y="98" width="9" height="45" rx="4" fill="#ffe0c2"/>
-    <!-- outfit -->
-    <g class="doll-outfit">${outfitSVG}</g>
-    <!-- head -->
-    <circle cx="100" cy="60" r="34" fill="#ffe0c2"/>
-    <!-- hair back -->
-    <path d="M64,55 Q60,100 74,120 Q66,90 70,55 Z" fill="#7a5233"/>
-    <path d="M136,55 Q140,100 126,120 Q134,90 130,55 Z" fill="#7a5233"/>
-    <!-- hair top -->
-    <path d="M64,54 Q66,18 100,16 Q134,18 136,54 Q120,36 100,36 Q80,36 64,54 Z" fill="#8a6440"/>
-    <!-- eyes (big, idol style) -->
-    <ellipse cx="86" cy="62" rx="7" ry="9" fill="#3a2a20"/>
-    <ellipse cx="114" cy="62" rx="7" ry="9" fill="#3a2a20"/>
-    <circle cx="88" cy="59" r="2.2" fill="#fff"/>
-    <circle cx="116" cy="59" r="2.2" fill="#fff"/>
-    <!-- blush -->
-    <ellipse cx="78" cy="72" rx="5" ry="3" fill="#ffb6c1" opacity="0.6"/>
-    <ellipse cx="122" cy="72" rx="5" ry="3" fill="#ffb6c1" opacity="0.6"/>
-    <!-- smile -->
-    <path d="M92,78 Q100,84 108,78" fill="none" stroke="#c97a53" stroke-width="2" stroke-linecap="round"/>
-    <!-- accessories -->
-    <g class="doll-accessories">${accessoriesSVG}</g>
-  </svg>`;
+function unlockedThumbHTML(item) {
+  return `<img class="thumb-img" src="${item.thumbUrl}" alt="${item.title}" loading="lazy"
+    onerror="this.closest('.thumb-frame').classList.add('thumb-broken')">`;
 }
 
-function renderDoll() {
-  const container = document.getElementById('doll-display');
-  container.innerHTML = renderDollSVG();
-}
-
-/* -------------------------------------------------------------------------
-   9. WARDROBE UI
-   ------------------------------------------------------------------------- */
-
-function renderWardrobe() {
-  const container = document.getElementById('wardrobe-content');
+function renderGallery() {
+  const container = document.getElementById('gallery-content');
   let html = '';
   for (const catKey of Object.keys(CATEGORY_LABELS)) {
-    const items = WARDROBE_ITEMS.filter((it) => it.category === catKey);
-    html += `<div class="wardrobe-category">
-      <h3>${CATEGORY_LABELS[catKey]}</h3>
-      <div class="wardrobe-grid">`;
+    const items = GALLERY_ITEMS.filter((it) => it.category === catKey);
+    const unlockedCount = items.filter(isUnlocked).length;
+    html += `<div class="gallery-category">
+      <h3>${CATEGORY_ICONS[catKey]} ${CATEGORY_LABELS[catKey]} <span class="cat-count">${unlockedCount}/${items.length}</span></h3>
+      <div class="gallery-grid">`;
     for (const item of items) {
       const unlocked = isUnlocked(item);
-      const equipped = state.equipped[item.slot] === item.id;
       html += `
-        <button class="wardrobe-item ${unlocked ? 'unlocked' : 'locked'} ${equipped ? 'equipped' : ''}"
+        <button class="thumb-frame ${unlocked ? 'unlocked' : 'locked'}"
                 data-item-id="${item.id}"
                 ${unlocked ? '' : 'disabled aria-disabled="true"'}
-                title="${item.name}">
-          <span class="wardrobe-icon">${unlocked ? itemPreviewIcon(item) : '🔒'}</span>
-          <span class="wardrobe-name">${unlocked ? item.name : '???'}</span>
+                title="${unlocked ? item.title : '???'}">
+          ${unlocked ? unlockedThumbHTML(item) : lockedThumbHTML()}
         </button>`;
     }
     html += `</div></div>`;
   }
   container.innerHTML = html;
 
-  container.querySelectorAll('.wardrobe-item.unlocked').forEach((btn) => {
+  container.querySelectorAll('.thumb-frame.unlocked').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-item-id');
-      toggleEquip(id);
+      const list = unlockedItems();
+      const index = list.findIndex((it) => it.id === id);
+      openCollectionViewer(index >= 0 ? index : 0);
     });
   });
 }
 
-function itemPreviewIcon(item) {
-  if (item.kind === 'outfit') return '👗';
-  const icons = {
-    feet: '🥿', head: '👑', held: '👜', back: '🌌',
-    hands: '🧤', neck: '📏', ears: '⭐', wrist: '💍',
-    face: '🕶️', belt: '⛓️',
-  };
-  return icons[item.slot] || '✨';
+function toggleGalleryPanel() {
+  document.getElementById('gallery-panel').classList.toggle('open');
 }
 
-function toggleEquip(itemId) {
-  const item = ITEMS_BY_ID[itemId];
-  if (!item || !isUnlocked(item)) return;
-  if (state.equipped[item.slot] === itemId) {
-    delete state.equipped[item.slot];
-  } else {
-    state.equipped[item.slot] = itemId;
+function renderShowcase() {
+  const container = document.getElementById('showcase-content');
+  const list = unlockedItems();
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="showcase-empty">
+        <div class="showcase-empty-icon">🖼️</div>
+        <p>Löse Aufgaben, um deine ersten Bilder freizuschalten!</p>
+      </div>`;
+    return;
   }
-  saveJSON(STORAGE_KEYS.equipped, state.equipped);
-  renderDoll();
-  renderWardrobe();
+  const latest = list[list.length - 1];
+  container.innerHTML = `
+    <p class="showcase-label">Zuletzt freigeschaltet</p>
+    <button class="showcase-frame" id="showcase-open-btn" title="${latest.title}">
+      <img src="${latest.thumbUrl}" alt="${latest.title}"
+        onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'viewer-broken',textContent:'Bild nicht verfügbar'}))">
+    </button>
+    <p class="showcase-title">${latest.title}</p>
+    <p class="showcase-count">${list.length} / ${TOTAL_ITEMS} Bilder gesammelt</p>`;
+  const openBtn = document.getElementById('showcase-open-btn');
+  if (openBtn) {
+    openBtn.addEventListener('click', () => openCollectionViewer(list.length - 1));
+  }
 }
 
-function toggleWardrobePanel() {
-  const panel = document.getElementById('wardrobe-panel');
-  panel.classList.toggle('open');
+/* -------------------------------------------------------------------------
+   9. COLLECTION VIEWER (full-screen, navigable through unlocked images)
+   ------------------------------------------------------------------------- */
+
+let viewerIndex = 0;
+
+function openCollectionViewer(startIndex) {
+  const list = unlockedItems();
+  if (list.length === 0) return;
+  viewerIndex = Math.max(0, Math.min(startIndex || 0, list.length - 1));
+  renderCollectionViewer();
+  document.getElementById('collection-viewer').classList.add('visible');
+}
+
+function closeCollectionViewer() {
+  document.getElementById('collection-viewer').classList.remove('visible');
+}
+
+function stepCollectionViewer(delta) {
+  const list = unlockedItems();
+  if (list.length === 0) return;
+  viewerIndex = (viewerIndex + delta + list.length) % list.length;
+  renderCollectionViewer();
+}
+
+function renderCollectionViewer() {
+  const list = unlockedItems();
+  const overlay = document.getElementById('collection-viewer');
+  if (list.length === 0) {
+    overlay.innerHTML = '';
+    return;
+  }
+  const item = list[viewerIndex];
+  overlay.innerHTML = `
+    <div class="viewer-topbar">
+      <span class="viewer-counter">${viewerIndex + 1} / ${list.length}</span>
+      <button id="viewer-close-btn" class="close-btn" aria-label="Schließen">✕</button>
+    </div>
+    <div class="viewer-stage">
+      <button id="viewer-prev-btn" class="viewer-nav-btn" aria-label="Zurück" ${list.length < 2 ? 'disabled' : ''}>‹</button>
+      <img class="viewer-image" src="${item.fullUrl}" alt="${item.title}"
+        onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'viewer-broken',textContent:'Bild konnte nicht geladen werden 😢'}))">
+      <button id="viewer-next-btn" class="viewer-nav-btn" aria-label="Weiter" ${list.length < 2 ? 'disabled' : ''}>›</button>
+    </div>
+    <p class="viewer-caption">${CATEGORY_ICONS[item.category]} ${item.title}</p>`;
+
+  document.getElementById('viewer-close-btn').addEventListener('click', closeCollectionViewer);
+  document.getElementById('viewer-prev-btn').addEventListener('click', () => stepCollectionViewer(-1));
+  document.getElementById('viewer-next-btn').addEventListener('click', () => stepCollectionViewer(1));
 }
 
 /* -------------------------------------------------------------------------
@@ -632,13 +490,13 @@ function updateProgressBar() {
   const label = document.getElementById('progress-label');
   if (state.unlockedIds.size >= TOTAL_ITEMS) {
     bar.style.width = '100%';
-    label.textContent = 'Alle Outfits freigeschaltet! 🎉';
+    label.textContent = 'Alle Bilder freigeschaltet! 🎉';
     return;
   }
   const progressInMilestone = state.sessionCorrect % 10;
   const pct = (progressInMilestone / 10) * 100;
   bar.style.width = `${pct}%`;
-  label.textContent = `⭐ ${progressInMilestone} / 10 für das nächste Outfit!`;
+  label.textContent = `⭐ ${progressInMilestone} / 10 für das nächste Bild!`;
 }
 
 // Picks newly-unlocked items at random from whatever is still locked, so the
@@ -648,7 +506,7 @@ function checkUnlocks() {
   const currentCount = state.unlockedIds.size;
   if (target > currentCount) {
     const needed = target - currentCount;
-    const locked = WARDROBE_ITEMS.filter((it) => !state.unlockedIds.has(it.id));
+    const locked = GALLERY_ITEMS.filter((it) => !state.unlockedIds.has(it.id));
     const chosen = shuffle(locked).slice(0, needed);
     chosen.forEach((it) => state.unlockedIds.add(it.id));
     saveJSON(STORAGE_KEYS.unlockedIds, Array.from(state.unlockedIds));
@@ -664,8 +522,8 @@ function checkUnlocks() {
 function startGame() {
   document.getElementById('welcome-screen').classList.add('hidden');
   document.getElementById('game-screen').classList.remove('hidden');
-  renderDoll();
-  renderWardrobe();
+  renderShowcase();
+  renderGallery();
   updateProgressBar();
   nextQuestion();
 }
@@ -718,8 +576,9 @@ function submitAnswer() {
     updateProgressBar();
     const newlyUnlocked = checkUnlocks();
     if (newlyUnlocked.length > 0) {
+      renderGallery();
+      renderShowcase();
       showUnlockAnimation(newlyUnlocked);
-      renderWardrobe();
     }
   } else {
     feedbackPanel.className = 'feedback-panel feedback-incorrect';
@@ -770,16 +629,17 @@ function launchSparkleBurst() {
 
 function showUnlockAnimation(items) {
   const overlay = document.getElementById('unlock-overlay');
-  const itemNames = items.map((it) => it.name).join(', ');
+  const item = items[0];
+  const moreCount = items.length - 1;
   overlay.innerHTML = `
     <div class="unlock-modal">
-      <div class="gift-box">
-        <div class="gift-lid"></div>
-        <div class="gift-base"></div>
-      </div>
       <div class="unlock-stars">✨⭐✨⭐✨</div>
-      <h2>Neu freigeschaltet!</h2>
-      <p>${itemNames}</p>
+      <h2>${randomFrom(UNLOCK_MESSAGES)}</h2>
+      <button class="unlock-image-frame" id="unlock-image-btn" title="${item.title}">
+        <img src="${item.fullUrl}" alt="${item.title}"
+          onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'viewer-broken',textContent:'Bild konnte nicht geladen werden 😢'}))">
+      </button>
+      <p class="unlock-item-title">${CATEGORY_ICONS[item.category]} ${item.title}${moreCount > 0 ? ` <span class="unlock-more">+${moreCount} weitere</span>` : ''}</p>
       <button id="unlock-continue-btn" class="primary-btn">Weiter ✨</button>
     </div>`;
   overlay.classList.add('visible');
@@ -788,6 +648,16 @@ function showUnlockAnimation(items) {
     overlay.classList.remove('visible');
     overlay.innerHTML = '';
   });
+  const imageBtn = document.getElementById('unlock-image-btn');
+  if (imageBtn) {
+    imageBtn.addEventListener('click', () => {
+      overlay.classList.remove('visible');
+      overlay.innerHTML = '';
+      const list = unlockedItems();
+      const index = list.findIndex((it) => it.id === item.id);
+      openCollectionViewer(index >= 0 ? index : 0);
+    });
+  }
 }
 
 /* -------------------------------------------------------------------------
@@ -809,9 +679,18 @@ function restrictToDigits(input) {
 function init() {
   document.getElementById('play-btn').addEventListener('click', startGame);
   document.getElementById('check-btn').addEventListener('click', submitAnswer);
-  document.getElementById('wardrobe-toggle-btn').addEventListener('click', toggleWardrobePanel);
-  document.getElementById('wardrobe-close-btn').addEventListener('click', toggleWardrobePanel);
+  document.getElementById('gallery-toggle-btn').addEventListener('click', toggleGalleryPanel);
+  document.getElementById('gallery-close-btn').addEventListener('click', toggleGalleryPanel);
+  document.getElementById('collection-toggle-btn').addEventListener('click', () => openCollectionViewer(unlockedItems().length - 1));
   restrictToDigits(document.getElementById('answer-input'));
+
+  document.addEventListener('keydown', (e) => {
+    const viewer = document.getElementById('collection-viewer');
+    if (!viewer.classList.contains('visible')) return;
+    if (e.key === 'Escape') closeCollectionViewer();
+    if (e.key === 'ArrowLeft') stepCollectionViewer(-1);
+    if (e.key === 'ArrowRight') stepCollectionViewer(1);
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);
