@@ -252,7 +252,7 @@ function isUnlocked(item) {
    5. MATH QUESTION GENERATION
    ------------------------------------------------------------------------- */
 
-const OPERATIONS = ['add', 'sub', 'mul', 'div'];
+const OPERATIONS = ['add', 'sub', 'mul', 'div', 'divRest', 'twoStep', 'riddle'];
 
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -260,13 +260,11 @@ function randInt(min, max) {
 
 function generateQuestion() {
   let attempt;
-  let key;
   do {
     const op = OPERATIONS[randInt(0, OPERATIONS.length - 1)];
     attempt = buildQuestion(op);
-    key = `${attempt.op}_${attempt.a}_${attempt.b}`;
-  } while (key === state.lastQuestionKey);
-  state.lastQuestionKey = key;
+  } while (attempt.key === state.lastQuestionKey);
+  state.lastQuestionKey = attempt.key;
   return attempt;
 }
 
@@ -274,23 +272,133 @@ function buildQuestion(op) {
   if (op === 'add') {
     const a = randInt(1, 89);
     const b = randInt(1, 100 - a);
-    return { op, a, b, result: a + b, symbol: '+' };
+    return { op, a, b, result: a + b, symbol: '+', key: `add_${a}_${b}` };
   }
   if (op === 'sub') {
     const a = randInt(10, 100);
     const b = randInt(1, a - 1);
-    return { op, a, b, result: a - b, symbol: '−' };
+    return { op, a, b, result: a - b, symbol: '−', key: `sub_${a}_${b}` };
   }
   if (op === 'mul') {
     const a = randInt(1, 10);
     const b = randInt(1, 10);
-    return { op, a, b, result: a * b, symbol: '×' };
+    return { op, a, b, result: a * b, symbol: '×', key: `mul_${a}_${b}` };
   }
-  // division: exact, derived from multiplication tables
-  const divisor = randInt(1, 10);
-  const quotient = randInt(1, 10);
-  const dividend = divisor * quotient;
-  return { op, a: dividend, b: divisor, result: quotient, symbol: '÷' };
+  if (op === 'div') {
+    // division: exact, derived from multiplication tables
+    const divisor = randInt(1, 10);
+    const quotient = randInt(1, 10);
+    const dividend = divisor * quotient;
+    return { op, a: dividend, b: divisor, result: quotient, symbol: '÷', key: `div_${dividend}_${divisor}` };
+  }
+  if (op === 'divRest') return buildDivRestQuestion();
+  if (op === 'twoStep') return buildTwoStepQuestion();
+  return buildRiddleQuestion();
+}
+
+// Division with a non-zero remainder: dividend up to 100, divisor from {3,4,6,7}.
+function buildDivRestQuestion() {
+  const divisors = [3, 4, 6, 7];
+  const divisor = randomFrom(divisors);
+  const maxQuotient = Math.floor((100 - (divisor - 1)) / divisor);
+  const quotient = randInt(1, maxQuotient);
+  const remainder = randInt(1, divisor - 1);
+  const dividend = divisor * quotient + remainder;
+  return {
+    op: 'divRest', a: dividend, b: divisor, result: quotient, remainder, symbol: '÷',
+    key: `divRest_${dividend}_${divisor}`,
+  };
+}
+
+// Two-step expression where a ×/÷ pair must be computed before a +/− pair,
+// in either textual order (matching real operator precedence).
+function buildTwoStepQuestion() {
+  const layout = randomFrom(['A', 'B']);
+  const opAdd = randomFrom(['+', '−']);
+  const opMul = randomFrom(['×', '÷']);
+
+  let mulLeft;
+  let mulRight;
+  let mid;
+  if (opMul === '×') {
+    mulLeft = randInt(2, 9);
+    mulRight = randInt(2, 9);
+    mid = mulLeft * mulRight;
+  } else {
+    mulRight = randInt(2, 9);
+    const q = randInt(2, 9);
+    mulLeft = mulRight * q;
+    mid = q;
+  }
+
+  let a;
+  let b;
+  let c;
+  let result;
+  if (layout === 'A') {
+    // a opAdd (b opMul c) — the ×/÷ pair comes second, textually.
+    b = mulLeft;
+    c = mulRight;
+    if (opAdd === '+') {
+      a = randInt(1, 100 - mid);
+      result = a + mid;
+    } else {
+      a = randInt(mid, 100);
+      result = a - mid;
+    }
+  } else {
+    // (a opMul b) opAdd c — the ×/÷ pair comes first, textually.
+    a = mulLeft;
+    b = mulRight;
+    if (opAdd === '+') {
+      c = randInt(1, 100 - mid);
+      result = mid + c;
+    } else {
+      c = randInt(0, mid);
+      result = mid - c;
+    }
+  }
+
+  return {
+    op: 'twoStep', layout, a, b, c, opAdd, opMul, mid, result,
+    key: `twoStep_${layout}_${a}_${b}_${c}_${opAdd}_${opMul}`,
+  };
+}
+
+// A short logic riddle: 3 German clues that together identify a number 10-99.
+const MULTIPLE_WORDS = { 2: 'Zweier', 3: 'Dreier', 4: 'Vierer', 5: 'Fünfer', 6: 'Sechser', 7: 'Siebener', 8: 'Achter', 9: 'Neuner', 10: 'Zehner' };
+
+function buildRiddleQuestion() {
+  const n = randInt(10, 99);
+  const divisorsOfN = Object.keys(MULTIPLE_WORDS).map(Number).filter((d) => n % d === 0);
+
+  const cluePool = ['parity', 'between', 'compare'];
+  if (divisorsOfN.length > 0) cluePool.unshift('multiple');
+  const chosenTypes = shuffle(cluePool).slice(0, 3);
+
+  const clues = shuffle(chosenTypes.map((type) => {
+    if (type === 'parity') {
+      return n % 2 === 0 ? 'Meine Zahl ist gerade.' : 'Meine Zahl ist ungerade.';
+    }
+    if (type === 'multiple') {
+      const d = randomFrom(divisorsOfN);
+      return `Sie ist eine ${MULTIPLE_WORDS[d]}zahl.`;
+    }
+    if (type === 'between') {
+      const lo = Math.max(1, n - randInt(2, 8));
+      const hi = n + randInt(2, 8);
+      return `Sie liegt zwischen ${lo} und ${hi}.`;
+    }
+    // compare
+    if (Math.random() < 0.5) {
+      const x = Math.max(0, n - randInt(3, 12));
+      return `Sie ist größer als ${x}.`;
+    }
+    const y = n + randInt(3, 12);
+    return `Sie ist kleiner als ${y}.`;
+  }));
+
+  return { op: 'riddle', result: n, clues, key: `riddle_${n}_${clues.join('|')}` };
 }
 
 /* -------------------------------------------------------------------------
@@ -301,6 +409,7 @@ function buildVisual(q) {
   if (q.op === 'add') return buildBarAddition(q);
   if (q.op === 'sub') return buildBarSubtraction(q);
   if (q.op === 'mul') return buildGrid(q.a, q.b, 'mul');
+  if (q.op === 'divRest') return buildDivRestVisual(q);
   return buildGrid(q.result, q.b, 'div', q.a);
 }
 
@@ -357,6 +466,51 @@ function buildGrid(rows, cols, mode, dividendLabel) {
   return html;
 }
 
+// Division with remainder: full b-sized packages, plus an isolated,
+// differently-styled "Rest" package for whatever is left over.
+function buildDivRestVisual(q) {
+  let html = '<div class="grid-model divrest-model" role="img" aria-label="Aufteilung mit Rest">';
+  html += `<div class="grid-caption">${q.a} in ${q.b}er-Päckchen aufteilen</div>`;
+  html += '<div class="divrest-packages">';
+  for (let p = 0; p < q.result; p++) {
+    html += '<div class="divrest-package">';
+    for (let d = 0; d < q.b; d++) html += '<span class="grid-dot"></span>';
+    html += '</div>';
+  }
+  if (q.remainder > 0) {
+    html += '<div class="divrest-package divrest-remainder">';
+    for (let d = 0; d < q.remainder; d++) html += '<span class="grid-dot rest-dot"></span>';
+    html += '</div>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+// Equation text with the operation that must be computed first (× or ÷)
+// visually boxed, per operator precedence — whichever side it falls on.
+function buildTwoStepText(q) {
+  const badge = (n) => `<span class="step-badge">${n}</span>`;
+  if (q.layout === 'A') {
+    return `${q.a} ${q.opAdd} <span class="priority-box">${badge(1)}${q.b} ${q.opMul} ${q.c}</span> = ?`;
+  }
+  return `<span class="priority-box">${badge(1)}${q.a} ${q.opMul} ${q.b}</span> ${q.opAdd} ${q.c} = ?`;
+}
+
+function buildTwoStepLegend(q) {
+  const first = q.layout === 'A' ? `${q.b} ${q.opMul} ${q.c}` : `${q.a} ${q.opMul} ${q.b}`;
+  const second = q.layout === 'A' ? `${q.a} ${q.opAdd} (Ergebnis)` : `(Ergebnis) ${q.opAdd} ${q.c}`;
+  return `
+    <div class="twostep-legend">
+      <span><span class="step-badge">1</span> zuerst: ${first}</span>
+      <span><span class="step-badge">2</span> dann: ${second}</span>
+    </div>`;
+}
+
+function buildRiddleClues(q) {
+  const items = q.clues.map((c) => `<li class="riddle-clue">${c}</li>`).join('');
+  return `<ul class="riddle-clues" role="img" aria-label="Zahlenrätsel-Hinweise">${items}</ul>`;
+}
+
 function buildExplanationVisual(q) {
   if (q.op === 'mul') {
     return `<p class="explain-text">${q.a} × ${q.b} = ${q.result} ✨</p>`;
@@ -367,7 +521,19 @@ function buildExplanationVisual(q) {
   if (q.op === 'add') {
     return `<p class="explain-text">${q.a} + ${q.b} = ${q.result} ✨</p>`;
   }
-  return `<p class="explain-text">${q.a} − ${q.b} = ${q.result} ✨</p>`;
+  if (q.op === 'sub') {
+    return `<p class="explain-text">${q.a} − ${q.b} = ${q.result} ✨</p>`;
+  }
+  if (q.op === 'divRest') {
+    return `<p class="explain-text">${q.a} ÷ ${q.b} = ${q.result} Rest ${q.remainder}, weil ${q.b} × ${q.result} = ${q.b * q.result} und ${q.b * q.result} + ${q.remainder} = ${q.a} ✨</p>`;
+  }
+  if (q.op === 'twoStep') {
+    const first = q.layout === 'A' ? `${q.b} ${q.opMul} ${q.c}` : `${q.a} ${q.opMul} ${q.b}`;
+    const second = q.layout === 'A' ? `${q.a} ${q.opAdd} ${q.mid}` : `${q.mid} ${q.opAdd} ${q.c}`;
+    return `<p class="explain-text">Zuerst: ${first} = ${q.mid} ✨<br>Dann: ${second} = ${q.result} ✨</p>`;
+  }
+  // riddle
+  return `<p class="explain-text">Die gesuchte Zahl war ${q.result} ✨</p>`;
 }
 
 /* -------------------------------------------------------------------------
@@ -589,15 +755,67 @@ function nextQuestion() {
 
 function renderQuestion() {
   const q = state.currentQuestion;
-  document.getElementById('question-text').textContent = `${q.a} ${q.symbol} ${q.b} = ?`;
-  document.getElementById('question-visual').innerHTML = buildVisual(q);
-  const input = document.getElementById('answer-input');
-  input.value = '';
-  input.readOnly = false;
-  input.focus();
+  const textEl = document.getElementById('question-text');
+  const visualEl = document.getElementById('question-visual');
+  const inputsEl = document.getElementById('answer-inputs');
+
+  if (q.op === 'divRest') {
+    textEl.textContent = `${q.a} ${q.symbol} ${q.b} = ?`;
+    visualEl.innerHTML = buildVisual(q);
+    inputsEl.innerHTML = `
+      <div class="dual-input-group">
+        <label class="dual-input-label" for="answer-input-result">Ergebnis</label>
+        <input id="answer-input-result" class="answer-input answer-input-field" type="text"
+          inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="?" aria-label="Ergebnis">
+      </div>
+      <div class="dual-input-group">
+        <label class="dual-input-label" for="answer-input-rest">Rest</label>
+        <input id="answer-input-rest" class="answer-input answer-input-field" type="text"
+          inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="?" aria-label="Rest">
+      </div>`;
+  } else if (q.op === 'twoStep') {
+    textEl.innerHTML = buildTwoStepText(q);
+    visualEl.innerHTML = buildTwoStepLegend(q);
+    inputsEl.innerHTML = singleInputHTML();
+  } else if (q.op === 'riddle') {
+    textEl.textContent = 'Zahlenrätsel 🔍';
+    visualEl.innerHTML = buildRiddleClues(q);
+    inputsEl.innerHTML = singleInputHTML('Zahl?');
+  } else {
+    textEl.textContent = `${q.a} ${q.symbol} ${q.b} = ?`;
+    visualEl.innerHTML = buildVisual(q);
+    inputsEl.innerHTML = singleInputHTML();
+  }
+
+  setupAnswerInputs();
   document.getElementById('feedback-panel').innerHTML = '';
   document.getElementById('feedback-panel').className = 'feedback-panel';
   document.getElementById('check-btn').textContent = 'Prüfen';
+}
+
+function singleInputHTML(placeholder) {
+  return `<input id="answer-input" class="answer-input answer-input-field" type="text"
+    inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="${placeholder || '?'}" aria-label="Deine Antwort">`;
+}
+
+// (Re)binds digit-only filtering + Enter-to-submit on whichever answer
+// field(s) are currently in the DOM, and focuses the first one.
+function setupAnswerInputs() {
+  const fields = document.querySelectorAll('.answer-input-field');
+  fields.forEach((field) => {
+    field.readOnly = false;
+    field.value = '';
+    field.addEventListener('input', () => {
+      field.value = field.value.replace(/[^0-9]/g, '');
+    });
+    field.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitAnswer();
+      }
+    });
+  });
+  if (fields[0]) fields[0].focus();
 }
 
 function submitAnswer() {
@@ -605,18 +823,25 @@ function submitAnswer() {
     nextQuestion();
     return;
   }
-  const input = document.getElementById('answer-input');
-  const raw = input.value.trim();
-  if (raw === '') {
-    input.focus();
-    return;
-  }
-  const userAnswer = parseInt(raw, 10);
   const q = state.currentQuestion;
-  const correct = userAnswer === q.result;
-  state.answered = true;
-  input.readOnly = true;
+  let correct;
 
+  if (q.op === 'divRest') {
+    const resultInput = document.getElementById('answer-input-result');
+    const restInput = document.getElementById('answer-input-rest');
+    if (resultInput.value.trim() === '') { resultInput.focus(); return; }
+    if (restInput.value.trim() === '') { restInput.focus(); return; }
+    correct = parseInt(resultInput.value, 10) === q.result && parseInt(restInput.value, 10) === q.remainder;
+    resultInput.readOnly = true;
+    restInput.readOnly = true;
+  } else {
+    const input = document.getElementById('answer-input');
+    if (input.value.trim() === '') { input.focus(); return; }
+    correct = parseInt(input.value, 10) === q.result;
+    input.readOnly = true;
+  }
+
+  state.answered = true;
   const feedbackPanel = document.getElementById('feedback-panel');
   document.getElementById('check-btn').textContent = 'Nächste Aufgabe';
 
@@ -717,25 +942,12 @@ function showUnlockAnimation(items) {
    13. EVENT WIRING
    ------------------------------------------------------------------------- */
 
-function restrictToDigits(input) {
-  input.addEventListener('input', () => {
-    input.value = input.value.replace(/[^0-9]/g, '');
-  });
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      submitAnswer();
-    }
-  });
-}
-
 function init() {
   document.getElementById('play-btn').addEventListener('click', startGame);
   document.getElementById('check-btn').addEventListener('click', submitAnswer);
   document.getElementById('gallery-toggle-btn').addEventListener('click', toggleGalleryPanel);
   document.getElementById('gallery-close-btn').addEventListener('click', toggleGalleryPanel);
   document.getElementById('collection-toggle-btn').addEventListener('click', () => openCollectionViewer(unlockedItems().length - 1));
-  restrictToDigits(document.getElementById('answer-input'));
 
   document.addEventListener('keydown', (e) => {
     const viewer = document.getElementById('collection-viewer');
