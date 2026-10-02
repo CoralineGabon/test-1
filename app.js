@@ -367,38 +367,100 @@ function buildTwoStepQuestion() {
 
 // A short logic riddle: 3 German clues that together identify a number 10-99.
 const MULTIPLE_WORDS = { 2: 'Zweier', 3: 'Dreier', 4: 'Vierer', 5: 'Fünfer', 6: 'Sechser', 7: 'Siebener', 8: 'Achter', 9: 'Neuner', 10: 'Zehner' };
+const RIDDLE_MIN = 10;
+const RIDDLE_MAX = 99;
+
+function digitSum(x) {
+  return Math.floor(x / 10) + (x % 10);
+}
+
+// One candidate clue for the riddle: human-readable German text, plus a
+// predicate used to brute-force-check exactly which numbers satisfy it.
+function makeClue(type, n) {
+  if (type === 'parity') {
+    const text = n % 2 === 0 ? 'Meine Zahl ist gerade.' : 'Meine Zahl ist ungerade.';
+    return { type, text, pred: (x) => x % 2 === n % 2 };
+  }
+  if (type === 'multiple') {
+    const divisors = [2, 3, 4, 5, 6, 7, 8, 9].filter((d) => n % d === 0);
+    if (divisors.length === 0) return null;
+    const d = randomFrom(divisors);
+    return { type, text: `Sie ist eine ${MULTIPLE_WORDS[d]}zahl.`, pred: (x) => x % d === 0 };
+  }
+  if (type === 'between') {
+    const lo = Math.max(1, n - randInt(2, 8));
+    const hi = n + randInt(2, 8);
+    return { type, text: `Sie liegt zwischen ${lo} und ${hi}.`, pred: (x) => x > lo && x < hi };
+  }
+  if (type === 'compare') {
+    if (Math.random() < 0.5) {
+      const x0 = Math.max(0, n - randInt(3, 12));
+      return { type, text: `Sie ist größer als ${x0}.`, pred: (x) => x > x0 };
+    }
+    const y0 = n + randInt(3, 12);
+    return { type, text: `Sie ist kleiner als ${y0}.`, pred: (x) => x < y0 };
+  }
+  if (type === 'digitsum') {
+    const s = digitSum(n);
+    return { type, text: `Die Quersumme (Ziffernsumme) ist ${s}.`, pred: (x) => digitSum(x) === s };
+  }
+  // operation: a simple reversible calculation on the secret number.
+  const ops = [
+    { text: `Verdoppelt man sie, erhält man ${n * 2}.`, pred: (x) => x * 2 === n * 2 },
+    { text: `Zählt man 10 dazu, erhält man ${n + 10}.`, pred: (x) => x + 10 === n + 10 },
+    { text: `Verdreifacht man sie, erhält man ${n * 3}.`, pred: (x) => x * 3 === n * 3 },
+  ];
+  if (n >= RIDDLE_MIN + 10) {
+    ops.push({ text: `Zieht man 10 ab, erhält man ${n - 10}.`, pred: (x) => x - 10 === n - 10 });
+  }
+  const chosen = randomFrom(ops);
+  return { type: 'operation', text: chosen.text, pred: chosen.pred };
+}
+
+// Brute-forces every number in [RIDDLE_MIN, RIDDLE_MAX] against a set of
+// clues and returns how many satisfy ALL of them at once.
+function countMatches(clues) {
+  let count = 0;
+  for (let x = RIDDLE_MIN; x <= RIDDLE_MAX; x++) {
+    if (clues.every((c) => c.pred(x))) count++;
+  }
+  return count;
+}
+
+// Tries random 3-clue (then 4-clue) combinations for a given secret number
+// until the brute-force check confirms exactly one number in range matches
+// all of them — i.e. the riddle has a single, verified, unique solution.
+function tryBuildCluesForNumber(n) {
+  const availableTypes = ['parity', 'between', 'compare', 'digitsum', 'operation'];
+  if (n % 2 === 0 ? [2, 4, 6, 8].some((d) => n % d === 0) : true) {
+    // 'multiple' is only worth offering when a divisor actually exists.
+  }
+  availableTypes.unshift('multiple');
+
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const clueCount = attempt < 40 ? 3 : 4;
+    const types = shuffle(availableTypes).slice(0, Math.min(clueCount, availableTypes.length));
+    const clues = types.map((t) => makeClue(t, n)).filter(Boolean);
+    if (clues.length < 3) continue;
+    if (countMatches(clues) === 1) {
+      return clues;
+    }
+  }
+  return null;
+}
 
 function buildRiddleQuestion() {
-  const n = randInt(10, 99);
-  const divisorsOfN = Object.keys(MULTIPLE_WORDS).map(Number).filter((d) => n % d === 0);
-
-  const cluePool = ['parity', 'between', 'compare'];
-  if (divisorsOfN.length > 0) cluePool.unshift('multiple');
-  const chosenTypes = shuffle(cluePool).slice(0, 3);
-
-  const clues = shuffle(chosenTypes.map((type) => {
-    if (type === 'parity') {
-      return n % 2 === 0 ? 'Meine Zahl ist gerade.' : 'Meine Zahl ist ungerade.';
+  for (let i = 0; i < 25; i++) {
+    const n = randInt(RIDDLE_MIN, RIDDLE_MAX);
+    const clues = tryBuildCluesForNumber(n);
+    if (clues) {
+      const texts = shuffle(clues).map((c) => c.text);
+      return { op: 'riddle', result: n, clues: texts, key: `riddle_${n}_${texts.join('|')}` };
     }
-    if (type === 'multiple') {
-      const d = randomFrom(divisorsOfN);
-      return `Sie ist eine ${MULTIPLE_WORDS[d]}zahl.`;
-    }
-    if (type === 'between') {
-      const lo = Math.max(1, n - randInt(2, 8));
-      const hi = n + randInt(2, 8);
-      return `Sie liegt zwischen ${lo} und ${hi}.`;
-    }
-    // compare
-    if (Math.random() < 0.5) {
-      const x = Math.max(0, n - randInt(3, 12));
-      return `Sie ist größer als ${x}.`;
-    }
-    const y = n + randInt(3, 12);
-    return `Sie ist kleiner als ${y}.`;
-  }));
-
-  return { op: 'riddle', result: n, clues, key: `riddle_${n}_${clues.join('|')}` };
+  }
+  // Extremely unlikely fallback: a direct, unambiguous clue.
+  const n = randInt(RIDDLE_MIN, RIDDLE_MAX);
+  return { op: 'riddle', result: n, clues: [`Meine Zahl ist genau ${n}.`], key: `riddle_fallback_${n}` };
 }
 
 /* -------------------------------------------------------------------------
